@@ -11,6 +11,7 @@ export interface AIResponse {
 export interface APIError {
   error: string;
 }
+<<<<<<< HEAD
 
 export interface DataSnapshot {
   id: string;
@@ -36,3 +37,5 @@ export interface UserAlertConfig {
   enableAnomalyAlerts: boolean;
   enableDailyDigest: boolean;
 }
+=======
+>>>>>>> 643f6cc9afd2741fdc3861236a608034a468c464

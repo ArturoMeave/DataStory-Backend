@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes";
 import snapshotsRoutes from "./routes/snapshots.routes";
+import { startCronJobs } from "./jobs/monitor";
 
 dotenv.config();
 
@@ -28,6 +29,8 @@ app.get("/health", (_req, res) => {
     environment: process.env.NODE_ENV ?? "development",
   });
 });
+
+startCronJobs();
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

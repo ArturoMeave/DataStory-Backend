@@ -61,4 +61,15 @@ router.get("/:userId", (req: Request, res: Response) => {
   res.json(snapshot);
 });
 
+import { runMonitor } from "../jobs/monitor";
+
+router.post("/admin/run-monitor", async (_req, res: Response) => {
+  try {
+    await runMonitor();
+    res.json({ ok: true, message: "Monitor ejecutado correctamente." });
+  } catch (err) {
+    res.status(500).json({ error: "Error al ejecutar el monitor." });
+  }
+});
+
 export default router;

@@ -14,21 +14,32 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  snapshots Snapshot[]
+  snapshots   Snapshot[]
+  alertConfig UserAlertConfig?
 }
 
 model Snapshot {
-  id             String   @id @default(uuid())
-  userId         String
-  createdAt      DateTime @default(now())
-  totalRevenue   Float
-  totalExpenses  Float
-  netProfit      Float
-  periodCount    Int
-  anomalyCount   Int
-  goalAmount     Float?
-  aiSummary      String?
-  recentPeriods  Json
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  createdAt     DateTime @default(now())
+  totalRevenue  Float
+  totalExpenses Float
+  netProfit     Float
+  periodCount   Int
+  anomalyCount  Int
+  goalAmount    Float?
+  aiSummary     String?
+  recentPeriods Json
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserAlertConfig {
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  email               String
+  enableAnomalyAlerts Boolean @default(true)
+  enableDailyDigest   Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -28,7 +28,8 @@ router.post("/generate", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("[ai/generate]", err);
     const error: APIError = {
-      error: "Error al conectar con Groq. Revisa tu API Key.",
+      error:
+        "El servicio de análisis no está disponible en este momento. Por favor, inténtelo más tarde.",
     };
     res.status(502).json(error);
   }

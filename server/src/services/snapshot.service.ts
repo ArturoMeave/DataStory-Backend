@@ -1,22 +1,29 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Snapshot } from "@prisma/client";
+import type { DataSnapshot, UserAlertConfig } from "../types";
 
 const prisma = new PrismaClient();
 
-// Guarda o actualiza el snapshot del usuario.
-// Upsert significa "actualiza si existe, crea si no existe".
-// Cada usuario solo tiene un snapshot — el más reciente.
-export async function saveSnapshot(data: {
-  userId: string;
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-  periodCount: number;
-  anomalyCount: number;
-  goalAmount?: number;
-  aiSummary?: string;
-  recentPeriods: Array<{ date: string; revenue: number; expenses: number }>;
-}) {
-  return prisma.snapshot.upsert({
+// Convierte un objeto de Prisma al tipo DataSnapshot de nuestra app
+function toDataSnapshot(record: Snapshot): DataSnapshot {
+  return {
+    id: record.id,
+    userId: record.userId,
+    createdAt: new Date(record.createdAt).getTime(),
+    totalRevenue: record.totalRevenue,
+    totalExpenses: record.totalExpenses,
+    netProfit: record.netProfit,
+    periodCount: record.periodCount,
+    anomalyCount: record.anomalyCount,
+    goalAmount: record.goalAmount ?? undefined,
+    aiSummary: record.aiSummary ?? undefined,
+    recentPeriods: record.recentPeriods as DataSnapshot["recentPeriods"],
+  };
+}
+
+export async function saveSnapshot(
+  data: Omit<DataSnapshot, "id" | "createdAt">,
+): Promise<DataSnapshot> {
+  const record = await prisma.snapshot.upsert({
     where: { userId: data.userId },
     update: {
       totalRevenue: data.totalRevenue,
@@ -41,27 +48,30 @@ export async function saveSnapshot(data: {
       recentPeriods: data.recentPeriods,
     },
   });
+
+  return toDataSnapshot(record);
 }
 
-export async function getSnapshot(userId: string) {
-  return prisma.snapshot.findUnique({
+export async function getSnapshot(
+  userId: string,
+): Promise<DataSnapshot | null> {
+  const record = await prisma.snapshot.findUnique({
     where: { userId },
   });
+
+  if (!record) return null;
+  return toDataSnapshot(record);
 }
 
-export async function getAllSnapshots() {
-  return prisma.snapshot.findMany({
-    include: { user: { select: { email: true } } },
-  });
+export async function getAllSnapshots(): Promise<DataSnapshot[]> {
+  const records = await prisma.snapshot.findMany();
+  return records.map(toDataSnapshot);
 }
 
-export async function saveUserAlertConfig(data: {
-  userId: string;
-  email: string;
-  enableAnomalyAlerts: boolean;
-  enableDailyDigest: boolean;
-}) {
-  return prisma.userAlertConfig.upsert({
+export async function saveUserAlertConfig(
+  data: UserAlertConfig,
+): Promise<UserAlertConfig> {
+  const record = await prisma.userAlertConfig.upsert({
     where: { userId: data.userId },
     update: {
       email: data.email,
@@ -75,14 +85,38 @@ export async function saveUserAlertConfig(data: {
       enableDailyDigest: data.enableDailyDigest,
     },
   });
+
+  return {
+    userId: record.userId,
+    email: record.email,
+    enableAnomalyAlerts: record.enableAnomalyAlerts,
+    enableDailyDigest: record.enableDailyDigest,
+  };
 }
 
-export async function getUserAlertConfig(userId: string) {
-  return prisma.userAlertConfig.findUnique({
+export async function getUserAlertConfig(
+  userId: string,
+): Promise<UserAlertConfig | null> {
+  const record = await prisma.userAlertConfig.findUnique({
     where: { userId },
   });
+
+  if (!record) return null;
+
+  return {
+    userId: record.userId,
+    email: record.email,
+    enableAnomalyAlerts: record.enableAnomalyAlerts,
+    enableDailyDigest: record.enableDailyDigest,
+  };
 }
 
-export async function getAllUserAlertConfigs() {
-  return prisma.userAlertConfig.findMany();
+export async function getAllUserAlertConfigs(): Promise<UserAlertConfig[]> {
+  const records = await prisma.userAlertConfig.findMany();
+  return records.map((record) => ({
+    userId: record.userId,
+    email: record.email,
+    enableAnomalyAlerts: record.enableAnomalyAlerts,
+    enableDailyDigest: record.enableDailyDigest,
+  }));
 }

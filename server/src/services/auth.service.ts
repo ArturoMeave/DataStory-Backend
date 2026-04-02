@@ -4,11 +4,18 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "fallback_secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET no está definido en el archivo .env. El servidor no puede arrancar sin él.",
+  );
+}
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "7d";
 
 function generateToken(userId: string, email: string): string {
-  return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ userId, email }, JWT_SECRET as string, {
+    expiresIn: JWT_EXPIRES_IN as any,
+  });
 }
 
 export async function registerUser(
@@ -68,7 +75,7 @@ export async function loginUser(
 }
 
 export function verifyToken(token: string): { userId: string; email: string } {
-  const decoded = jwt.verify(token, JWT_SECRET) as {
+  const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as {
     userId: string;
     email: string;
   };

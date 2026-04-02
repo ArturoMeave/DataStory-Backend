@@ -1,8 +1,11 @@
 import { Router, type Request, type Response } from "express";
 import { generateAIResponse } from "../services/groq.service";
 import type { AIRequest, APIError } from "../types";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.post("/generate", async (req: Request, res: Response) => {
   const body = req.body as Partial<AIRequest>;

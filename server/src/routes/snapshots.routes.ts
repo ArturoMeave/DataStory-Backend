@@ -7,17 +7,17 @@ import {
   getUserConfig,
 } from "../storage/store";
 import type { DataSnapshot, UserAlertConfig, APIError } from "../types";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.post("/", async (req: Request, res: Response) => {
   const body = req.body as Partial<DataSnapshot>;
 
-  if (!body.userId) {
-    const error: APIError = { error: "El campo userId es obligatorio." };
-    res.status(400).json(error);
-    return;
-  }
+  // Usamos el userId del token JWT, no el que envía el frontend
+  const userId = req.userId!;
 
   if (body.totalRevenue === undefined || body.totalExpenses === undefined) {
     const error: APIError = {
@@ -29,7 +29,7 @@ router.post("/", async (req: Request, res: Response) => {
 
   const snapshot: DataSnapshot = {
     id: uuidv4(),
-    userId: body.userId,
+    userId,
     createdAt: Date.now(),
     totalRevenue: body.totalRevenue,
     totalExpenses: body.totalExpenses,
@@ -45,16 +45,15 @@ router.post("/", async (req: Request, res: Response) => {
   res.status(201).json({ ok: true, id: snapshot.id });
 });
 
-router.get("/:userId", (req: Request, res: Response) => {
-  const userId = req.params.userId as string;
+router.get("/me", (req: Request, res: Response) => {
+  const userId = req.userId!;
 
   const snapshot = getSnapshot(userId);
 
   if (!snapshot) {
-    const error: APIError = {
-      error: "No se encontró ningún snapshot para este usuario.",
-    };
-    res.status(404).json(error);
+    res
+      .status(404)
+      .json({ error: "No se encontró ningún snapshot para este usuario." });
     return;
   }
 

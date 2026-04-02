@@ -5,10 +5,34 @@ import aiRoutes from "./routes/ai.routes";
 import snapshotsRoutes from "./routes/snapshots.routes";
 import authRoutes from "./routes/auth.routes";
 import { startCronJobs } from "./jobs/monitor";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
 const app = express();
+
+app.use(helmet());
+
+const generateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Demasiadas peticiones. Intenta de nuevo en 15 minutos" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 100,
+  max: 5,
+  message: { error: "Demasiados intentos. Intenta de nuevo en 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(generateLimiter);
+app.use("/api/auth", authLimiter);
+
 const PORT = process.env.PORT ?? 3001;
 
 app.use(

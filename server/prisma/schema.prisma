@@ -2,25 +2,49 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+
+model Workspace {
   id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
+  name      String
   createdAt DateTime @default(now())
 
-  snapshots   Snapshot[]
-  alertConfig UserAlertConfig?
+  users     User[]
+  snapshots Snapshot[]
 }
+
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String?
+  createdAt   DateTime @default(now())
+
+  role        Role     @default(VIEWER)
+  
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  alertConfig UserAlertConfig?
+  uploadedSnapshots Snapshot[]
+}
+
 
 model Snapshot {
   id            String   @id @default(uuid())
-  userId        String   @unique
   createdAt     DateTime @default(now())
   totalRevenue  Float
   totalExpenses Float
@@ -31,8 +55,13 @@ model Snapshot {
   aiSummary     String?
   recentPeriods Json
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  uploadedById  String?
+  uploadedBy    User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 }
+
 
 model UserAlertConfig {
   id                  String  @id @default(uuid())

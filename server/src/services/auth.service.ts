@@ -12,8 +12,14 @@ if (!JWT_SECRET) {
 }
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "7d";
 
-export function generateToken(userId: string, email: string): string {
-  return jwt.sign({ userId, email }, JWT_SECRET as string, {
+export function generateToken(
+  userId: string,
+  email: string,
+  trustedUntil?: number,
+): string {
+  const payload: Record<string, unknown> = { userId, email };
+  if (trustedUntil) payload.twoFactorTrustedUntil = trustedUntil;
+  return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: JWT_EXPIRES_IN as any,
   });
 }
@@ -108,7 +114,7 @@ export async function generateTwoFactorSecret(userId: string, email: string) {
     secret: secret,
   });
 
-  // Guardamos la semilla en el cajón de la base de datos, pero AÚN NO bloqueamos la puerta (habilitar 2FA)
+  // Guardamos la semilla pero AÚN NO habilitamos el 2FA
   await prisma.user.update({
     where: { id: userId },
     data: { twoFactorSecret: secret },
@@ -138,4 +144,18 @@ export async function verifyTwoFactorToken(userId: string, token: string) {
   }
 
   return user;
+}
+
+export async function update2FAFrequency(
+  userId: string,
+  token: string,
+  frequency: string,
+): Promise<void> {
+  // Primero verificamos que el código sea correcto (misma protección que al hacer login)
+  await verifyTwoFactorToken(userId, token);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { twoFactorFrequency: frequency } as any,
+  });
 }

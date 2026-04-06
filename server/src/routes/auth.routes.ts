@@ -5,6 +5,7 @@ import {
   generateTwoFactorSecret,
   verifyTwoFactorToken,
   generateToken,
+  update2FAFrequency,
 } from "../services/auth.service";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { PrismaClient } from "@prisma/client";
@@ -73,15 +74,25 @@ router.post("/login/verify-2fa", async (req: Request, res: Response) => {
   }
 
   try {
-    // Si la función rechaza el token disparará un Error que caerá en el catch
     const user = await verifyTwoFactorToken(userId, token);
     
-    // Todo correcto: Entregamos la llave definitiva (JWT)
-    const jwtToken = generateToken(user.id, user.email);
+    const frequencyDays: Record<string, number> = { "7d": 7, "15d": 15, "30d": 30 };
+    const days = frequencyDays[(user as any).twoFactorFrequency];
+    const trustedUntil = days
+      ? Math.floor(Date.now() / 1000) + days * 24 * 60 * 60
+      : undefined;
+
+    const jwtToken = generateToken(user.id, user.email, trustedUntil);
     
     res.json({
       token: jwtToken,
-      user: { id: user.id, email: user.email, name: user.name }
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
+        twoFactorFrequency: (user as any).twoFactorFrequency,
+      }
     });
   } catch (err) {
     const error: APIError = {
@@ -107,7 +118,7 @@ router.post("/2fa/generate", async (req: Request, res: Response) => {
 });
 
 router.post("/2fa/enable", async (req: Request, res: Response) => {
-  const { token } = req.body;
+  const { token, frequency = "always" } = req.body;
 
   if (!token) {
     res.status(400).json({ error: "Falta el token 2FA para habilitarlo." });
@@ -115,19 +126,51 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
   }
 
   try {
-    // Hacemos el simulacro: probamos si el usuario de verdad ligó su teléfono leyendo el código correcto.
-    await verifyTwoFactorToken(req.userId!, token);
-    
-    // Si la validación no saltó al Catch, significa que la prueba tuvo éxito, procedemos a encenderlo.
+    // Simulacro: comprobamos que el usuario ligó bien su teléfono
+    const user = await verifyTwoFactorToken(req.userId!, token);
+
+    // Guardamos la frecuencia elegida y activamos el candado
     await prisma.user.update({
       where: { id: req.userId! },
-      data: { isTwoFactorEnabled: true }
+      data: { 
+        isTwoFactorEnabled: true, 
+        twoFactorFrequency: frequency 
+      } as any, 
     });
 
-    res.json({ ok: true, message: "2FA habilitado correctamente." });
+    // Calculamos cuándo expira la "confianza" para incluirlo en el JWT
+    const frequencyDays: Record<string, number> = { "7d": 7, "15d": 15, "30d": 30 };
+    const days = frequencyDays[frequency];
+    const trustedUntil = days
+      ? Math.floor(Date.now() / 1000) + days * 24 * 60 * 60
+      : undefined;
+
+    // Emitimos el JWT definitivo con la fecha de confianza dentro del payload
+    const jwtToken = generateToken(user.id, user.email, trustedUntil);
+
+    res.json({ ok: true, message: "2FA habilitado correctamente.", token: jwtToken });
   } catch (err) {
     const error: APIError = {
-      error: err instanceof Error ? err.message : "Error al habilitar 2FA. El código podría ser inválido.",
+      error: err instanceof Error ? err.message : "Error al habilitar 2FA.",
+    };
+    res.status(400).json(error);
+  }
+});
+
+router.post("/2fa/update-frequency", async (req: Request, res: Response) => {
+  const { token, frequency } = req.body;
+
+  if (!token || !frequency) {
+    res.status(400).json({ error: "Faltan el código o la frecuencia." });
+    return;
+  }
+
+  try {
+    await update2FAFrequency(req.userId!, token, frequency);
+    res.json({ ok: true, message: "Frecuencia actualizada correctamente." });
+  } catch (err) {
+    const error: APIError = {
+      error: err instanceof Error ? err.message : "Error al actualizar la frecuencia.",
     };
     res.status(400).json(error);
   }

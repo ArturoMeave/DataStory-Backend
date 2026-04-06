@@ -6,9 +6,7 @@ const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error(
-    "JWT_SECRET no está definido en el archivo .env. El servidor no puede arrancar sin él.",
-  );
+  throw new Error("JWT_SECRET no está definido.");
 }
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? "7d";
 
@@ -33,11 +31,18 @@ export async function registerUser(
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // CREAMOS EL WORKSPACE Y EL USUARIO AL MISMO TIEMPO (Nuestra Oficina Y Empleado)
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       name,
+      role: "ADMIN",
+      workspace: {
+        create: {
+          name: "Mi Empresa", // Nombre por defecto amigable
+        },
+      },
     },
   });
 
@@ -57,12 +62,7 @@ export async function loginUser(
   user: { id: string; email: string; name: string | null };
 }> {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    throw new Error("Email o contraseña incorrectos.");
-  }
-
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) {
+  if (!user || !(await bcrypt.compare(password, user.password))) {
     throw new Error("Email o contraseña incorrectos.");
   }
 

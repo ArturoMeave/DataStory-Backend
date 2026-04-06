@@ -18,7 +18,7 @@ export async function runMonitor(): Promise<void> {
   }
 
   const configByUser = new Map<string, UserAlertConfig>(
-    userConfigs.map((config) => [config.userId, config]),
+    userConfigs.map((config: UserAlertConfig) => [config.userId, config]),
   );
 
   let alertsSent = 0;

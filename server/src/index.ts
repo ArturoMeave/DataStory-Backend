@@ -49,8 +49,7 @@ const authLimiter = rateLimit({
 // 4. Rutas
 app.use("/api/ai", generalLimiter, aiRoutes);
 app.use("/api/snapshots", generalLimiter, snapshotsRoutes);
-app.use("/api/auth", authLimiter, authRoutes);
-app.use("/api/auth/google", googleRoutes);
+app.use("/api/auth", googleRoutes);
 app.use("/api/auth", authLimiter, authRoutes);
 
 // 5. Health check — sin rate limiting

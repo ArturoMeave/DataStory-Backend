@@ -71,7 +71,11 @@ export async function loginUser(
   user?: { id: string; email: string; name: string | null };
 }> {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
+  if (
+    !user ||
+    !user.password ||
+    !(await bcrypt.compare(password, user.password))
+  ) {
     throw new Error("Email o contraseña incorrectos.");
   }
 

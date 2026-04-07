@@ -29,7 +29,7 @@ model Workspace {
 model User {
   id          String   @id @default(uuid())
   email       String   @unique
-  password    String
+  password    String?
   name        String?
   createdAt   DateTime @default(now())
 
@@ -37,6 +37,8 @@ model User {
   
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  googleId    String?  @unique
 
   twoFactorSecret    String?
   isTwoFactorEnabled Boolean @default(false)

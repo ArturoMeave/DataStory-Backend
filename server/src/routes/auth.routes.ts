@@ -46,21 +46,19 @@ router.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    const error: APIError = { error: "Email y contraseña son obligatorios." };
-    res.status(400).json(error);
+    res.status(400).json({ error: "Email y contraseña son obligatorios." });
     return;
   }
 
   try {
-    const result = await loginUser(email, password);
-    // result ya contiene { requiresTwoFactor: true, userId: '...' } si el 2FA está encendido,
-    // o { token, user } si entra de forma clásica.
-    res.json(result); 
+    const userAgent = req.headers["user-agent"] ?? "Desconocido";
+    const ip = req.ip ?? "Desconocida";
+    const result = await loginUser(email, password, userAgent, ip);
+    res.json(result);
   } catch (err) {
-    const error: APIError = {
+    res.status(401).json({
       error: err instanceof Error ? err.message : "Error al iniciar sesión.",
-    };
-    res.status(401).json(error);
+    });
   }
 });
 
@@ -75,15 +73,19 @@ router.post("/login/verify-2fa", async (req: Request, res: Response) => {
 
   try {
     const user = await verifyTwoFactorToken(userId, token);
-    
-    const frequencyDays: Record<string, number> = { "7d": 7, "15d": 15, "30d": 30 };
+
+    const frequencyDays: Record<string, number> = {
+      "7d": 7,
+      "15d": 15,
+      "30d": 30,
+    };
     const days = frequencyDays[(user as any).twoFactorFrequency];
     const trustedUntil = days
       ? Math.floor(Date.now() / 1000) + days * 24 * 60 * 60
       : undefined;
 
     const jwtToken = generateToken(user.id, user.email, trustedUntil);
-    
+
     res.json({
       token: jwtToken,
       user: {
@@ -92,7 +94,7 @@ router.post("/login/verify-2fa", async (req: Request, res: Response) => {
         name: user.name,
         isTwoFactorEnabled: user.isTwoFactorEnabled,
         twoFactorFrequency: (user as any).twoFactorFrequency,
-      }
+      },
     });
   } catch (err) {
     const error: APIError = {
@@ -132,14 +134,18 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
     // Guardamos la frecuencia elegida y activamos el candado
     await prisma.user.update({
       where: { id: req.userId! },
-      data: { 
-        isTwoFactorEnabled: true, 
-        twoFactorFrequency: frequency 
-      } as any, 
+      data: {
+        isTwoFactorEnabled: true,
+        twoFactorFrequency: frequency,
+      } as any,
     });
 
     // Calculamos cuándo expira la "confianza" para incluirlo en el JWT
-    const frequencyDays: Record<string, number> = { "7d": 7, "15d": 15, "30d": 30 };
+    const frequencyDays: Record<string, number> = {
+      "7d": 7,
+      "15d": 15,
+      "30d": 30,
+    };
     const days = frequencyDays[frequency];
     const trustedUntil = days
       ? Math.floor(Date.now() / 1000) + days * 24 * 60 * 60
@@ -148,7 +154,11 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
     // Emitimos el JWT definitivo con la fecha de confianza dentro del payload
     const jwtToken = generateToken(user.id, user.email, trustedUntil);
 
-    res.json({ ok: true, message: "2FA habilitado correctamente.", token: jwtToken });
+    res.json({
+      ok: true,
+      message: "2FA habilitado correctamente.",
+      token: jwtToken,
+    });
   } catch (err) {
     const error: APIError = {
       error: err instanceof Error ? err.message : "Error al habilitar 2FA.",
@@ -170,7 +180,10 @@ router.post("/2fa/update-frequency", async (req: Request, res: Response) => {
     res.json({ ok: true, message: "Frecuencia actualizada correctamente." });
   } catch (err) {
     const error: APIError = {
-      error: err instanceof Error ? err.message : "Error al actualizar la frecuencia.",
+      error:
+        err instanceof Error
+          ? err.message
+          : "Error al actualizar la frecuencia.",
     };
     res.status(400).json(error);
   }

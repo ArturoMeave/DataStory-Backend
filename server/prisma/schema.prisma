@@ -32,6 +32,7 @@ model User {
   password    String?
   name        String?
   createdAt   DateTime @default(now())
+  sessions    Session[]
 
   role        Role     @default(VIEWER)
   
@@ -75,6 +76,20 @@ model UserAlertConfig {
   email               String
   enableAnomalyAlerts Boolean @default(true)
   enableDailyDigest   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  device    String
+  browser   String
+  ip        String
+  createdAt DateTime @default(now())
+  lastUsed  DateTime @default(now())
+  isActive  Boolean  @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

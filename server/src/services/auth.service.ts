@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { generateSecret, generateURI, verify } from "otplib";
 import qrcode from "qrcode";
+import { createSession } from "./session.service";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,14 @@ export function generateToken(
   return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: JWT_EXPIRES_IN as any,
   });
+}
+
+export function verifyToken(token: string): { userId: string; email: string } {
+  const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as {
+    userId: string;
+    email: string;
+  };
+  return decoded;
 }
 
 export async function registerUser(
@@ -64,6 +73,8 @@ export async function registerUser(
 export async function loginUser(
   email: string,
   password: string,
+  userAgent: string = "Desconocido",
+  ip: string = "Desconocida",
 ): Promise<{
   token?: string;
   requiresTwoFactor?: boolean;
@@ -79,7 +90,6 @@ export async function loginUser(
     throw new Error("Email o contraseña incorrectos.");
   }
 
-  // LA SALA DE ESPERA: Si el usuario tiene el candado puesto, no le damos la llave todavía.
   if (user.isTwoFactorEnabled) {
     return {
       requiresTwoFactor: true,
@@ -87,20 +97,14 @@ export async function loginUser(
     };
   }
 
+  await createSession(user.id, userAgent, ip);
+
   const token = generateToken(user.id, user.email);
 
   return {
     token,
     user: { id: user.id, email: user.email, name: user.name },
   };
-}
-
-export function verifyToken(token: string): { userId: string; email: string } {
-  const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as {
-    userId: string;
-    email: string;
-  };
-  return decoded;
 }
 
 // ==========================================

@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes";
 import { startCronJobs } from "./jobs/monitor";
 import passport from "passport";
 import googleRoutes from "./routes/google.routes";
+import sessionsRoutes from "./routes/sessions.routes";
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use("/api/ai", generalLimiter, aiRoutes);
 app.use("/api/snapshots", generalLimiter, snapshotsRoutes);
 app.use("/api/auth", googleRoutes);
 app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/sessions", sessionsRoutes);
 
 // 5. Health check — sin rate limiting
 app.get("/health", (_req, res) => {

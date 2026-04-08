@@ -11,6 +11,7 @@ import passport from "passport";
 import googleRoutes from "./routes/google.routes";
 import sessionsRoutes from "./routes/sessions.routes";
 import workspaceRoutes from "./routes/workspace.routes";
+import invitationRoutes from "./routes/invitation.routes";
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use("/api/auth", googleRoutes);
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/sessions", sessionsRoutes);
 app.use("/api/workspaces", generalLimiter, workspaceRoutes);
+app.use("/api/invitations", generalLimiter, invitationRoutes);
 
 // 5. Health check — sin rate limiting
 app.get("/health", (_req, res) => {

@@ -60,7 +60,7 @@ export async function registerUser(
       email,
       password: hashedPassword,
       name,
-      role: "ADMIN",
+      role: "OWNER",
       workspace: {
         create: {
           name: "Mi Empresa",

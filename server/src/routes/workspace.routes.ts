@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
-import { getWorkspaceMembers, updateMemberRole, inviteMember } from "../services/workspace.service";
+import {
+  getWorkspaceMembers,
+  updateMemberRole,
+} from "../services/workspace.service"; // <-- inviteMember ELIMINADO
 import { PrismaClient, Role } from "@prisma/client";
 
 const router = Router();
@@ -40,6 +43,7 @@ router.put("/members/:id/role", authMiddleware, async (req, res) => {
       return;
     }
 
+    // Verificamos que el rol sea uno de los permitidos por Prisma
     if (!Object.values(Role).includes(role)) {
       res.status(400).json({ error: "Rol inválido" });
       return;
@@ -48,7 +52,11 @@ router.put("/members/:id/role", authMiddleware, async (req, res) => {
     const updatedUser = await updateMemberRole(adminUserId, targetUserId, role);
     res.json({ message: "Rol actualizado exitosamente", user: updatedUser });
   } catch (error: any) {
-    if (error.message.includes("No tienes permisos") || error.message.includes("no pertenece")) {
+    if (
+      error.message.includes("No tienes permisos") ||
+      error.message.includes("no pertenece") ||
+      error.message.includes("OWNER")
+    ) {
       res.status(403).json({ error: error.message });
     } else {
       res.status(400).json({ error: error.message });
@@ -56,31 +64,7 @@ router.put("/members/:id/role", authMiddleware, async (req, res) => {
   }
 });
 
-// POST /invite - Invita (o asigna) un usuario al workspace
-router.post("/invite", authMiddleware, async (req, res) => {
-  try {
-    const adminUserId = req.userId;
-    const { email, role } = req.body;
-
-    if (!adminUserId) {
-      res.status(401).json({ error: "No autorizado" });
-      return;
-    }
-
-    if (!email || !Object.values(Role).includes(role)) {
-      res.status(400).json({ error: "Email o rol inválido" });
-      return;
-    }
-
-    const invitedUser = await inviteMember(adminUserId, email, role);
-    res.json({ message: "Usuario asignado exitosamente", user: invitedUser });
-  } catch (error: any) {
-    if (error.message.includes("No tienes permisos")) {
-      res.status(403).json({ error: error.message });
-    } else {
-      res.status(400).json({ error: error.message });
-    }
-  }
-});
+// NOTA: La ruta POST /invite ha sido eliminada de aquí porque ahora
+// usamos el sistema de códigos en invitation.routes.ts
 
 export default router;

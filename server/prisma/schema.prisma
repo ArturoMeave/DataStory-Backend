@@ -10,6 +10,7 @@ datasource db {
 
 
 enum Role {
+  OWNER
   ADMIN
   EDITOR
   VIEWER
@@ -22,6 +23,7 @@ model Workspace {
   createdAt DateTime @default(now())
 
   users     User[]
+  invitations Invitation[]
   snapshots Snapshot[]
 }
 
@@ -92,4 +94,14 @@ model Session {
   isActive  Boolean  @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id          String   @id @default(uuid())
+  code        String   @unique // El código secreto (ej. AX92-KPL1)
+  workspaceId String   // A qué empresa pertenece la invitación
+  role        Role     @default(EDITOR) // Qué rol se le dará al usuario
+  createdAt   DateTime @default(now())
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }

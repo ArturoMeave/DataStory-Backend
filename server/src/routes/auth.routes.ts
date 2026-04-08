@@ -10,6 +10,7 @@ import {
 import { authMiddleware } from "../middleware/auth.middleware";
 import { PrismaClient } from "@prisma/client";
 import type { APIError } from "../types";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -186,6 +187,41 @@ router.post("/2fa/update-frequency", async (req: Request, res: Response) => {
           : "Error al actualizar la frecuencia.",
     };
     res.status(400).json(error);
+  }
+});
+
+router.delete("/delete-account", async (req: Request, res: Response) => {
+  const { password } = req.body;
+
+  if (!password) {
+    res
+      .status(400)
+      .json({ error: "La contraseña es obligatoria para eliminar la cuenta." });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId! } });
+
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado." });
+      return;
+    }
+
+    if (user.password) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        res.status(401).json({ error: "Contraseña incorrecta." });
+        return;
+      }
+    }
+
+    await prisma.user.delete({ where: { id: req.userId! } });
+
+    res.json({ ok: true, message: "Cuenta eliminada correctamente." });
+  } catch (err) {
+    console.error("[delete-account]", err);
+    res.status(500).json({ error: "Error al eliminar la cuenta." });
   }
 });
 

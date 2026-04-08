@@ -6,6 +6,7 @@ declare global {
     interface Request {
       userId?: string;
       userEmail?: string;
+      sessionId?: string;
     }
   }
 }
@@ -28,6 +29,7 @@ export function authMiddleware(
     const decoded = verifyToken(token);
     req.userId = decoded.userId;
     req.userEmail = decoded.email;
+    req.sessionId = decoded.sessionId;
     next();
   } catch {
     res.status(401).json({ error: "Token inválido o expirado." });

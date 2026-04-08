@@ -17,18 +17,25 @@ export function generateToken(
   userId: string,
   email: string,
   trustedUntil?: number,
+  sessionId?: string,
 ): string {
   const payload: Record<string, unknown> = { userId, email };
   if (trustedUntil) payload.twoFactorTrustedUntil = trustedUntil;
+  if (sessionId) payload.sessionId = sessionId;
   return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: JWT_EXPIRES_IN as any,
   });
 }
 
-export function verifyToken(token: string): { userId: string; email: string } {
+export function verifyToken(token: string): {
+  userId: string;
+  email: string;
+  sessionId?: string;
+} {
   const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as {
     userId: string;
     email: string;
+    sessionId?: string;
   };
   return decoded;
 }
@@ -98,6 +105,13 @@ export async function loginUser(
   }
 
   await createSession(user.id, userAgent, ip);
+
+  const sessions = await prisma.session.findMany({
+    where: { userId: user.id, isActive: true },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+  });
+  const sessionId = sessions[0]?.id;
 
   const token = generateToken(user.id, user.email);
 

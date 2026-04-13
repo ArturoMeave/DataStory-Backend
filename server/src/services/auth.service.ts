@@ -46,7 +46,14 @@ export async function registerUser(
   name?: string,
 ): Promise<{
   token: string;
-  user: { id: string; email: string; name: string | null };
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role?: string;
+    isTwoFactorEnabled?: boolean;
+    twoFactorFrequency?: string;
+  };
 }> {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -93,7 +100,14 @@ export async function loginUser(
   token?: string;
   requiresTwoFactor?: boolean;
   userId?: string;
-  user?: { id: string; email: string; name: string | null };
+  user?: {
+    id: string;
+    email: string;
+    name: string | null;
+    role?: string;
+    isTwoFactorEnabled?: boolean;
+    twoFactorFrequency?: string;
+  };
 }> {
   const user = await prisma.user.findUnique({ where: { email } });
   if (

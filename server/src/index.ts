@@ -1,70 +1,42 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import aiRoutes from "./routes/ai.routes";
-import snapshotsRoutes from "./routes/snapshots.routes";
-import authRoutes from "./routes/auth.routes";
-import { startCronJobs } from "./jobs/monitor";
-import passport from "passport";
-import googleRoutes from "./routes/google.routes";
-import sessionsRoutes from "./routes/sessions.routes";
-import workspaceRoutes from "./routes/workspace.routes";
-import invitationRoutes from "./routes/invitation.routes";
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: "ADMIN" | "USER" | "VIEWER";
+  isTwoFactorEnabled?: boolean;
+  twoFactorFrequency?: "always" | "7d" | "15d" | "30d";
+  workspaceId?: string;
+}
 
-dotenv.config();
+export interface AuthState {
+  token: string | null;
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+}
 
-const app = express();
-const PORT = process.env.PORT ?? 3001;
+export interface DataRow {
+  date: string;
+  revenue: number;
+  expenses: number;
+  [key: string]: any;
+}
 
-app.use(helmet());
+export interface Anomaly {
+  index: number;
+  type: "revenue" | "expenses";
+  expected: number;
+  actual: number;
+  deviation: number;
+}
 
-app.use(
-  cors({
-    origin: process.env.APP_URL ?? "http://localhost:5173",
-    credentials: true,
-  }),
-);
-app.use(express.json());
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+  priority: "high" | "medium" | "low";
+}
 
-app.use(passport.initialize());
-
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: "Demasiadas peticiones. Intenta de nuevo en 15 minutos." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: "Demasiados intentos. Intenta de nuevo en 15 minutos." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use("/api/ai", generalLimiter, aiRoutes);
-app.use("/api/snapshots", generalLimiter, snapshotsRoutes);
-app.use("/api/auth", googleRoutes);
-app.use("/api/auth", authLimiter, authRoutes);
-app.use("/api/sessions", sessionsRoutes);
-app.use("/api/workspaces", generalLimiter, workspaceRoutes);
-app.use("/api/invitations", generalLimiter, invitationRoutes);
-
-app.get("/health", (_req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV ?? "development",
-  });
-});
-
-startCronJobs();
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`Entorno: ${process.env.NODE_ENV ?? "development"}`);
-});
+export interface ChartDataPoint extends DataRow {
+  index: number;
+  isForecast?: boolean;
+}

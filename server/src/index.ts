@@ -1,42 +1,45 @@
-export interface AuthUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: "ADMIN" | "USER" | "VIEWER";
-  isTwoFactorEnabled?: boolean;
-  twoFactorFrequency?: "always" | "7d" | "15d" | "30d";
-  workspaceId?: string;
-}
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
 
-export interface AuthState {
-  token: string | null;
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-}
+import authRoutes from "./routes/auth.routes";
+import googleRoutes from "./routes/google.routes";
+import aiRoutes from "./routes/ai.routes";
+import snapshotsRoutes from "./routes/snapshots.routes";
+import workspaceRoutes from "./routes/workspace.routes";
+import sessionsRoutes from "./routes/sessions.routes";
+import invitationRoutes from "./routes/invitation.routes";
 
-export interface DataRow {
-  date: string;
-  revenue: number;
-  expenses: number;
-  [key: string]: any;
-}
+import shopifyRoutes from "./routes/shopify.routes";
 
-export interface Anomaly {
-  index: number;
-  type: "revenue" | "expenses";
-  expected: number;
-  actual: number;
-  deviation: number;
-}
+import { startCronJobs } from "./jobs/monitor";
 
-export interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  priority: "high" | "medium" | "low";
-}
+dotenv.config();
 
-export interface ChartDataPoint extends DataRow {
-  index: number;
-  isForecast?: boolean;
-}
+const app = express();
+
+app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.APP_URL ?? "http://localhost:5173",
+    credentials: true,
+  }),
+);
+
+app.use("/api/auth", authRoutes);
+app.use("/api/auth", googleRoutes);
+// AQUÍ ENCHUFAMOS SHOPIFY
+app.use("/api/auth/shopify", shopifyRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/snapshots", snapshotsRoutes);
+app.use("/api/workspace", workspaceRoutes);
+app.use("/api/sessions", sessionsRoutes);
+app.use("/api/invitations", invitationRoutes);
+
+startCronJobs();
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor DataStory encendido en el puerto ${PORT}`);
+  console.log(`🛍️  Ruta de Shopify lista para conectar`);
+});

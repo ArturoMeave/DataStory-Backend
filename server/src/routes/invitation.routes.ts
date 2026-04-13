@@ -8,7 +8,6 @@ import {
 
 const router = Router();
 
-// Ventanilla para crear código (Requiere estar logueado como Admin)
 router.post("/generate", authMiddleware, async (req, res) => {
   try {
     const { role } = req.body;
@@ -19,7 +18,6 @@ router.post("/generate", authMiddleware, async (req, res) => {
   }
 });
 
-// Ventanilla para verificar el código (Pública, no requiere login)
 router.get("/validate/:code", async (req, res) => {
   try {
     const info = await validateInvitation(req.params.code);
@@ -29,7 +27,6 @@ router.get("/validate/:code", async (req, res) => {
   }
 });
 
-// Ventanilla para canjear el código (Requiere estar logueado como el usuario nuevo)
 router.post("/accept", authMiddleware, async (req, res) => {
   try {
     const { code } = req.body;

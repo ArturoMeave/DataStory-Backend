@@ -211,9 +211,9 @@ export async function sendSessionRevokedAlert(
         </p>
         <div style="background: #16161f; border-radius: 8px; padding: 16px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 28px;">
           <p style="font-size: 11px; color: #4a4a6a; text-transform: uppercase; margin: 0 0 12px;">Detalles del dispositivo eliminado</p>
-          <p style="font-size: 13px; color: #f0f0f8; margin: 0 0 6px;">🖥️ ${device} · ${browser}</p>
-          <p style="font-size: 13px; color: #8888a8; margin: 0 0 6px;">📍 IP: ${ip}</p>
-          <p style="font-size: 13px; color: #8888a8; margin: 0;">🕐 ${date}</p>
+          <p style="font-size: 13px; color: #f0f0f8; margin: 0 0 6px;">Dispositivo: ${device} · ${browser}</p>
+          <p style="font-size: 13px; color: #8888a8; margin: 0 0 6px;">IP: ${ip}</p>
+          <p style="font-size: 13px; color: #8888a8; margin: 0;">Fecha: ${date}</p>
         </div>
         <a href="${process.env.APP_URL ?? "http://localhost:5173"}/settings"
           style="display: inline-block; background: #7c6aff; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 8px;">

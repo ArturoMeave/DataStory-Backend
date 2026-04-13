@@ -3,13 +3,12 @@ import { authMiddleware } from "../middleware/auth.middleware";
 import {
   getWorkspaceMembers,
   updateMemberRole,
-} from "../services/workspace.service"; // <-- inviteMember ELIMINADO
+} from "../services/workspace.service";
 import { PrismaClient, Role } from "@prisma/client";
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// GET /members - Obtiene todos los miembros del workspace del usuario actual
 router.get("/members", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
@@ -31,7 +30,6 @@ router.get("/members", authMiddleware, async (req, res) => {
   }
 });
 
-// PUT /members/:id/role - Actualiza el rol de un miembro
 router.put("/members/:id/role", authMiddleware, async (req, res) => {
   try {
     const adminUserId = req.userId;
@@ -43,7 +41,6 @@ router.put("/members/:id/role", authMiddleware, async (req, res) => {
       return;
     }
 
-    // Verificamos que el rol sea uno de los permitidos por Prisma
     if (!Object.values(Role).includes(role)) {
       res.status(400).json({ error: "Rol inválido" });
       return;
@@ -63,8 +60,5 @@ router.put("/members/:id/role", authMiddleware, async (req, res) => {
     }
   }
 });
-
-// NOTA: La ruta POST /invite ha sido eliminada de aquí porque ahora
-// usamos el sistema de códigos en invitation.routes.ts
 
 export default router;

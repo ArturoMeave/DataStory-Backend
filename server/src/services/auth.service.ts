@@ -73,7 +73,14 @@ export async function registerUser(
 
   return {
     token,
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name,
+      role: user.role,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
+      twoFactorFrequency: (user as any).twoFactorFrequency,
+    },
   };
 }
 
@@ -117,32 +124,31 @@ export async function loginUser(
 
   return {
     token,
-    user: { id: user.id, email: user.email, name: user.name },
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name,
+      role: user.role,
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
+      twoFactorFrequency: (user as any).twoFactorFrequency,
+    },
   };
 }
 
-// ==========================================
-// 2FA LOGIC (LÓGICA DEL DOBLE FACTOR)
-// ==========================================
-
 export async function generateTwoFactorSecret(userId: string, email: string) {
-  // 1. Creamos la "semilla" matemática única para este usuario
   const secret = generateSecret();
 
-  // 2. Preparamos los datos para que la app de Google Authenticator los entienda
   const otpauthUrl = generateURI({
     issuer: "DataStory",
     label: email,
     secret: secret,
   });
 
-  // Guardamos la semilla pero AÚN NO habilitamos el 2FA
   await prisma.user.update({
     where: { id: userId },
     data: { twoFactorSecret: secret },
   });
 
-  // 3. Dibujamos la imagen del código de barras (QR)
   const qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl);
 
   return { secret, qrCodeDataUrl };
@@ -155,7 +161,6 @@ export async function verifyTwoFactorToken(userId: string, token: string) {
     throw new Error("El usuario no tiene 2FA configurado.");
   }
 
-  // 4. El guardia comprueba si los 6 números que da el usuario coinciden con la semilla
   const isValid = verify({
     token: token,
     secret: user.twoFactorSecret,
@@ -173,7 +178,6 @@ export async function update2FAFrequency(
   token: string,
   frequency: string,
 ): Promise<void> {
-  // Primero verificamos que el código sea correcto (misma protección que al hacer login)
   await verifyTwoFactorToken(userId, token);
 
   await prisma.user.update({

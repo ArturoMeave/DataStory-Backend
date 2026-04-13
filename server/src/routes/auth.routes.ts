@@ -93,6 +93,7 @@ router.post("/login/verify-2fa", async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
         isTwoFactorEnabled: user.isTwoFactorEnabled,
         twoFactorFrequency: (user as any).twoFactorFrequency,
       },
@@ -105,14 +106,11 @@ router.post("/login/verify-2fa", async (req: Request, res: Response) => {
   }
 });
 
-// ===================================
-// RUTAS PROTEGIDAS (Ajustes de Sesión)
-// ===================================
+
 router.use(authMiddleware);
 
 router.post("/2fa/generate", async (req: Request, res: Response) => {
   try {
-    // Obtenemos userId y email directamente del token gracias al authMiddleware
     const result = await generateTwoFactorSecret(req.userId!, req.userEmail!);
     res.json(result);
   } catch (err) {
@@ -129,10 +127,8 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
   }
 
   try {
-    // Simulacro: comprobamos que el usuario ligó bien su teléfono
     const user = await verifyTwoFactorToken(req.userId!, token);
 
-    // Guardamos la frecuencia elegida y activamos el candado
     await prisma.user.update({
       where: { id: req.userId! },
       data: {
@@ -141,7 +137,6 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
       } as any,
     });
 
-    // Calculamos cuándo expira la "confianza" para incluirlo en el JWT
     const frequencyDays: Record<string, number> = {
       "7d": 7,
       "15d": 15,
@@ -152,7 +147,6 @@ router.post("/2fa/enable", async (req: Request, res: Response) => {
       ? Math.floor(Date.now() / 1000) + days * 24 * 60 * 60
       : undefined;
 
-    // Emitimos el JWT definitivo con la fecha de confianza dentro del payload
     const jwtToken = generateToken(user.id, user.email, trustedUntil);
 
     res.json({

@@ -18,10 +18,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
-// 1. Seguridad primero
 app.use(helmet());
 
-// 2. CORS y parseo de JSON — antes que cualquier otra cosa
 app.use(
   cors({
     origin: process.env.APP_URL ?? "http://localhost:5173",
@@ -32,7 +30,6 @@ app.use(express.json());
 
 app.use(passport.initialize());
 
-// 3. Rate limiting por ruta
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -49,7 +46,6 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 4. Rutas
 app.use("/api/ai", generalLimiter, aiRoutes);
 app.use("/api/snapshots", generalLimiter, snapshotsRoutes);
 app.use("/api/auth", googleRoutes);
@@ -58,7 +54,6 @@ app.use("/api/sessions", sessionsRoutes);
 app.use("/api/workspaces", generalLimiter, workspaceRoutes);
 app.use("/api/invitations", generalLimiter, invitationRoutes);
 
-// 5. Health check — sin rate limiting
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",

@@ -26,10 +26,9 @@ app.use(
   }),
 );
 
-app.use("/api/auth", authRoutes);
-app.use("/api/auth", googleRoutes);
-// AQUÍ ENCHUFAMOS SHOPIFY
 app.use("/api/auth/shopify", shopifyRoutes);
+app.use("/api/auth", googleRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/snapshots", snapshotsRoutes);
 app.use("/api/workspace", workspaceRoutes);

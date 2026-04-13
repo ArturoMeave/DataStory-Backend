@@ -24,3 +24,50 @@ export async function exchangeShopifyToken(shop: string, code: string) {
     throw new Error("No se pudo obtener el token");
   }
 }
+
+// ─── NUEVO: FUNCIÓN PARA TRAER LOS DATOS REALES ───
+export async function getShopifyData(shop: string, accessToken: string) {
+  // Usamos la versión estable de la API de Shopify
+  const API_VERSION = "2024-01";
+
+  // Metemos la llave maestra en la "mochila" de la petición
+  const headers = { "X-Shopify-Access-Token": accessToken };
+
+  try {
+    // Pedimos a la vez los productos y los pedidos (para que cargue más rápido)
+    const [ordersRes, productsRes] = await Promise.all([
+      axios.get(
+        `https://${shop}/admin/api/${API_VERSION}/orders.json?status=any`,
+        { headers },
+      ),
+      axios.get(`https://${shop}/admin/api/${API_VERSION}/products.json`, {
+        headers,
+      }),
+    ]);
+
+    const orders = ordersRes.data.orders || [];
+    const products = productsRes.data.products || [];
+
+    // Calculamos el dinero total sumando todos los pedidos
+    const totalRevenue = orders.reduce(
+      (sum: number, order: any) => sum + parseFloat(order.total_price),
+      0,
+    );
+
+    return {
+      orderCount: orders.length,
+      productCount: products.length,
+      totalRevenue: totalRevenue,
+      // Guardamos los 5 últimos pedidos para la gráfica/tabla
+      recentOrders: orders.slice(0, 5).map((o: any) => ({
+        id: o.id,
+        orderNumber: o.name,
+        total: parseFloat(o.total_price),
+        date: o.created_at,
+      })),
+    };
+  } catch (error) {
+    console.error("Error descargando datos de Shopify:", error);
+    throw new Error("Error al descargar los datos de la tienda.");
+  }
+}

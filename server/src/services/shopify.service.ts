@@ -65,6 +65,17 @@ export async function getShopifyData(shop: string, accessToken: string) {
         total: parseFloat(o.total_price),
         date: o.created_at,
       })),
+      orderList: orders.map((o: any) => ({
+        id: o.id,
+        orderNumber: o.name,
+        customer: o.customer
+          ? `${o.customer.first_name || ""} ${o.customer.last_name || ""}`.trim()
+          : "Cliente Anónimo",
+        date: o.created_at,
+        total: parseFloat(o.total_price),
+        financialStatus: o.financial_status || "pending",
+        fulfillmentStatus: o.fulfillment_status || "unfulfilled",
+      })),
     };
   } catch (error) {
     console.error("Error descargando datos de Shopify:", error);

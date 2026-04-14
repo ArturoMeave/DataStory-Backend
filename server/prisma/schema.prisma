@@ -51,6 +51,9 @@ model User {
   uploadedSnapshots Snapshot[]
 
   shopifyConnection ShopifyConnection?
+  shopifyOrders    ShopifyCachedOrder[]
+  shopifyProducts  ShopifyCachedProduct[]
+  shopifyCustomers ShopifyCachedCustomer[]
 }
 
 
@@ -116,4 +119,44 @@ model ShopifyConnection {
   updateAt     DateTime @updatedAt
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id])
+}
+
+model ShopifyCachedOrder {
+  id                String   @id
+  userId            String
+  orderNumber       String
+  customerName      String
+  date              DateTime
+  total             Float
+  financialStatus   String
+  fulfillmentStatus String
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyCachedProduct {
+  id          String   @id
+  userId      String
+  title       String
+  image       String?
+  status      String
+  inventory   Int
+  price       Float
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyCachedCustomer {
+  id          String   @id
+  userId      String
+  name        String
+  email       String
+  ordersCount Int
+  totalSpent  Float
+  verified    Boolean
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes";
-import googleRoutes from "./routes/google.routes";
 import aiRoutes from "./routes/ai.routes";
 import snapshotsRoutes from "./routes/snapshots.routes";
 import workspaceRoutes from "./routes/workspace.routes";
@@ -27,7 +26,6 @@ app.use(
 );
 
 app.use("/api/auth/shopify", shopifyRoutes);
-app.use("/api/auth", googleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/snapshots", snapshotsRoutes);

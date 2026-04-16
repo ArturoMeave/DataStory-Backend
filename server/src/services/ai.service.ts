@@ -35,3 +35,31 @@ export async function askDocumentAI(
     throw new Error("Error al conectar con el cerebro de IA.");
   }
 }
+
+export async function askDataAI(
+  documentText: string,
+  userQuestion: string,
+): Promise<string> {
+  try {
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "Eres un analista financiero de élite. Tu objetivo es dar respuestas EXTREMADAMENTE BREVES, precisas y accionables. Usa viñetas (bullet points) si hay más de un dato. No des introducciones ni conclusiones innecesarias. Ve directo al dato numérico.",
+        },
+        {
+          role: "user",
+          content: `DATOS:\n${documentText}\n\nPREGUNTA:\n${userQuestion}`,
+        },
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.1,
+    });
+
+    return chatCompletion.choices[0]?.message?.content || "Sin respuesta.";
+  } catch (error) {
+    console.error("Error en Groq AI (Datos):", error);
+    throw new Error("Error al conectar con el cerebro de IA.");
+  }
+}

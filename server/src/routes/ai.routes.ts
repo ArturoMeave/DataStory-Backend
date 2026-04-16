@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { PDFParse } from "pdf-parse"; // 1. Importamos la versión moderna (v2)
 import { generateAIResponse } from "../services/groq.service";
-import { askDocumentAI } from "../services/ai.service";
+import { askDocumentAI, askDataAI } from "../services/ai.service";
 import type { AIRequest, APIError } from "../types";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -98,12 +98,10 @@ router.post("/chat", async (req: Request, res: Response) => {
 
     const documentText = documentMemory[documentId];
     if (!documentText) {
-      res
-        .status(404)
-        .json({
-          error:
-            "El documento ha expirado o no se encuentra en memoria. Súbelo de nuevo.",
-        });
+      res.status(404).json({
+        error:
+          "El documento ha expirado o no se encuentra en memoria. Súbelo de nuevo.",
+      });
       return;
     }
 
@@ -117,4 +115,20 @@ router.post("/chat", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/analyze-data", async (req: Request, res: Response) => {
+  try {
+    const { data, question } = req.body;
+
+    if (!data || !question) {
+      res.status(400).json({ error: "Faltan los datos o la pregunta." });
+      return;
+    }
+
+    const aiResponse = await askDataAI(data, question);
+    res.json({ answer: aiResponse });
+  } catch (error) {
+    console.error("[ai/analyze-data] Error:", error);
+    res.status(500).json({ error: "Error en el análisis de datos." });
+  }
+});
 export default router;

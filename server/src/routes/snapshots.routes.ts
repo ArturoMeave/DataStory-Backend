@@ -6,6 +6,7 @@ import {
   getSnapshotsHistory,
   saveUserAlertConfig,
   getUserAlertConfig,
+  deleteSnapshot,
 } from "../services/snapshot.service";
 import type { APIError } from "../types";
 
@@ -49,7 +50,7 @@ router.post("/", async (req: Request, res: Response) => {
         aiSummary: body.aiSummary,
         recentPeriods: body.recentPeriods ?? [],
       },
-      userId
+      userId,
     );
 
     res.status(201).json({ ok: true, id: snapshot.id });
@@ -104,6 +105,18 @@ router.get("/config", async (req: Request, res: Response) => {
     res.json(config);
   } catch (err) {
     res.status(500).json({ error: "Error al cargar la config." });
+  }
+});
+
+router.delete("/:id", async (req: Request, res: Response) => {
+  const userId = req.userId!;
+  try {
+    // Añadimos "as string" para confirmar que es un texto único
+    await deleteSnapshot(req.params.id as string, userId);
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[snapshots/delete]", err.message);
+    res.status(500).json({ error: "Error al eliminar el snapshot." });
   }
 });
 

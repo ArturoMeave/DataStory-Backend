@@ -127,10 +127,27 @@ export async function getAllSnapshots(): Promise<DataSnapshot[]> {
 
 export async function getAllUserAlertConfigs(): Promise<UserAlertConfig[]> {
   const records = await prisma.userAlertConfig.findMany();
-  return records.map(record => ({
+  return records.map((record) => ({
     userId: record.userId,
     email: record.email,
     enableAnomalyAlerts: record.enableAnomalyAlerts,
     enableDailyDigest: record.enableDailyDigest,
   }));
+}
+
+export async function deleteSnapshot(id: string, userId: string) {
+  const snapshot = await prisma.snapshot.findUnique({
+    where: { id },
+  });
+
+  if (!snapshot) throw new Error("No encontrado");
+
+  // Usamos el nombre real de tu base de datos: uploadedById
+  if (snapshot.uploadedById !== userId) {
+    throw new Error("No autorizado");
+  }
+
+  return await prisma.snapshot.delete({
+    where: { id },
+  });
 }

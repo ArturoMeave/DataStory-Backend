@@ -117,18 +117,21 @@ router.post("/chat", async (req: Request, res: Response) => {
 
 router.post("/analyze-data", async (req: Request, res: Response) => {
   try {
-    const { data, question } = req.body;
+    const { data, prompt } = req.body;
 
-    if (!data || !question) {
-      res.status(400).json({ error: "Faltan los datos o la pregunta." });
+    if (!data || !prompt) {
+      res
+        .status(400)
+        .json({ error: "Faltan los datos o la pregunta (prompt)." });
       return;
     }
 
-    const aiResponse = await askDataAI(data, question);
-    res.json({ answer: aiResponse });
+    const aiResponse = await askDataAI(data, prompt);
+    res.json({ analysis: aiResponse });
   } catch (error) {
     console.error("[ai/analyze-data] Error:", error);
-    res.status(500).json({ error: "Error en el análisis de datos." });
+    res.status(500).json({ error: "Error en análisis de datos." });
   }
 });
+
 export default router;

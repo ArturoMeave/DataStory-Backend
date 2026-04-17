@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { generateSecret, generateURI, verify } from "otplib";
 import qrcode from "qrcode";
 import { createSession } from "./session.service";
+import { processTeamJoining } from "./invitation.service";
 
 const prisma = new PrismaClient();
 
@@ -44,6 +45,7 @@ export async function registerUser(
   email: string,
   password: string,
   name?: string,
+  inviteCode?: string | null,
 ): Promise<{
   token: string;
   user: {
@@ -62,18 +64,30 @@ export async function registerUser(
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-      role: "OWNER",
-      workspace: {
-        create: {
-          name: "Mi Empresa",
+  // Todo operado dentro de una Transacción para seguridad atómica
+  const user = await prisma.$transaction(async (tx) => {
+    // Si no hay invitación se crea el workspace original
+    const newUser = await tx.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: "OWNER",
+        workspace: {
+          create: {
+            name: "Mi Empresa",
+          },
         },
       },
-    },
+    });
+
+    if (inviteCode) {
+      // Como estamos registrando no existe force, directamente sobreescribe
+      // o se engancha validamente usando processTeamJoining.
+      return await processTeamJoining(tx, inviteCode, newUser, true);
+    }
+
+    return newUser;
   });
 
   const token = generateToken(user.id, user.email);

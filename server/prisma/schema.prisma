@@ -107,6 +107,7 @@ model Invitation {
   workspaceId String   // A qué empresa pertenece la invitación
   role        Role     @default(EDITOR) // Qué rol se le dará al usuario
   createdAt   DateTime @default(now())
+  expiresAt   DateTime @default(now())
   
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }

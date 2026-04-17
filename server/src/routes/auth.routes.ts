@@ -16,7 +16,7 @@ const prisma = new PrismaClient();
 const router = Router();
 
 router.post("/register", async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, inviteCode } = req.body;
 
   if (!email || !password) {
     const error: APIError = { error: "Email y contraseña son obligatorios." };
@@ -33,7 +33,7 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await registerUser(email, password, name);
+    const result = await registerUser(email, password, name, inviteCode);
     res.status(201).json(result);
   } catch (err) {
     const error: APIError = {
